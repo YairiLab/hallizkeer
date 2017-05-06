@@ -1,12 +1,15 @@
 name:                hallizkeer
 version:             0.1.0.0
+License:             MIT
+license-file:        LICENSE
 build-type:          Simple
 cabal-version:       >=1.20
 
 executable hallizkeer
   main-is:             Main.hs
+  hs-source-dirs:      src
   build-depends:       base
                      , transformers
-                     , postgresql-libpq
                      , bytestring
+                     , hsyslog     
   default-language:    Haskell2010
