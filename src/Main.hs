@@ -29,13 +29,13 @@ readValue fd i = do
 
 writeLog :: [Int] -> IO ()
 writeLog ns = writeLog' s
-    where s = B.unlines [B.pack $ show n | n<-ns]
+    where s = B.unwords [B.pack $ show n | n<-ns]
 writeLog' :: B.ByteString -> IO ()
 writeLog' s = withSyslog defaultConfig $ \syslog -> do
     syslog facility Info s
 
 reportProgress :: [Int] -> IO ()
-reportProgress ns =  putStrLn (' ':show mean)
+reportProgress ns =  putStrLn $ show mean
     where mean = sum ns `div` (length ns)
 
 facility :: Facility
