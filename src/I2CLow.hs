@@ -1,6 +1,7 @@
 module I2CLow (
     open, initIOControl, write1, read1,
-    FileDesc, ErrorCode, MemoryAddress) where
+    FileDesc, ErrorCode, MemoryAddress,
+    Word8) where
 
 import Data.Word
 import Foreign.C.Types

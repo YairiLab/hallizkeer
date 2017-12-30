@@ -1,12 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
-import Data.Word
 import Data.Maybe
 import qualified Data.ByteString.Char8 as B
-import Control.Monad
-import Control.Monad.Trans.Reader
-import Control.Monad.IO.Class
 import Control.Concurrent
-import Control.Applicative
 import System.Posix.Syslog
 import I2C
 

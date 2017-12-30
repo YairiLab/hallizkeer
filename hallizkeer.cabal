@@ -1,5 +1,5 @@
 name:                hallizkeer
-version:             0.1.0.0
+version:             0.1.1.0
 License:             MIT
 license-file:        LICENSE
 build-type:          Simple
@@ -11,5 +11,5 @@ executable hallizkeer
   build-depends:       base
                      , transformers
                      , bytestring
-                     , hsyslog     
+                     , hsyslog
   default-language:    Haskell2010
