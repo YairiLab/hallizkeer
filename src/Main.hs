@@ -1,10 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 import Data.Word
-import Data.Bits
 import qualified Data.ByteString.Char8 as B
 import Control.Monad
 import Control.Concurrent
-
+import Control.Applicative
 import System.Posix.Syslog
 import I2C
 
@@ -14,29 +13,23 @@ main = do
         Right _ <- initIOControl fd i2cAddress
         putStrLn "start inserting"
         forever $ do
-            ns <- forM [0..63] $ readValue fd
+            ns <- forM [0..63] $ readValue offset fd
             writeLog ns
-            reportProgress ns
+            reportStats ns
             threadDelay $ 500 * 1000
-
-readValue :: FileDesc -> Word8 -> IO Int
-readValue fd i = do
-    Right low  <- getDataAt fd $ offset + 2*i
-    Right high <- getDataAt fd $ offset + 2*i + 1
-    let low' = fromIntegral low
-    let high' = fromIntegral high
-    return (high' `shiftL` 8 + low')
 
 writeLog :: [Int] -> IO ()
 writeLog ns = writeLog' s
-    where s = B.unwords [B.pack $ show n | n<-ns]
+    where s = B.unwords $ (B.pack . show) <$> ns
 writeLog' :: B.ByteString -> IO ()
 writeLog' s = withSyslog defaultConfig $ \syslog -> do
     syslog facility Info s
 
-reportProgress :: [Int] -> IO ()
-reportProgress ns =  putStrLn $ show mean
-    where mean = sum ns `div` (length ns)
+reportStats :: [Int] -> IO ()
+reportStats ns =  print (maxVal, meanVal, minVal)
+    where maxVal  = maximum ns 
+          meanVal = sum ns `div` (length ns)
+          minVal  = minimum ns
 
 facility :: Facility
 facility = LOCAL5
