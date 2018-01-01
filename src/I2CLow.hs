@@ -3,13 +3,13 @@ module I2CLow (
     FileDesc, ErrorCode, MemoryAddress,
     Word8) where
 
-import Data.Word
+import Data.Word             (Word8)
 import Foreign.C.Types
-import Foreign.C.String
-import Foreign.Marshal.Array
-import Foreign.Ptr
+import Foreign.C.String      (CString, withCString)
+import Foreign.Marshal.Array (withArray, peekArray)
+import Foreign.Ptr           (Ptr)
 
-type FileDesc = CInt
+type FileDesc  = CInt
 type ErrorCode = Int
 type MemoryAddress = Word8
 

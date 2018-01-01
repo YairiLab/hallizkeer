@@ -1,11 +1,10 @@
-{-# LANGUAGE OverloadedStrings #-}
-import Data.Maybe
-import qualified Data.ByteString.Char8 as B
+import Control.Monad             (forever)
+import Control.Monad.IO.Class    (liftIO)
 import Control.Monad.Trans.Maybe (runMaybeT)
 import Control.Monad.Trans.Reader(runReaderT)
-import Control.Concurrent
-import System.Posix.Syslog
+import Control.Concurrent        (threadDelay)
 import I2C
+import Logger
 
 main :: IO ()
 main = withFile i2cFilepath $ \fd -> do
@@ -21,12 +20,6 @@ main = withFile i2cFilepath $ \fd -> do
                     threadDelay $ 500 * 1000
     return ()
 
-writeLog :: [Int] -> IO ()
-writeLog ns = writeLog' s
-    where s = B.unwords $ (B.pack . show) <$> ns
-writeLog' :: B.ByteString -> IO ()
-writeLog' s = withSyslog defaultConfig $ \syslog -> do
-    syslog facility Info s
 
 reportStats :: [Int] -> IO ()
 reportStats ns =  print (maxVal, meanVal, minVal)
@@ -34,8 +27,6 @@ reportStats ns =  print (maxVal, meanVal, minVal)
           meanVal = sum ns `div` (length ns)
           minVal  = minimum ns
 
-facility    :: Facility
-facility     = LOCAL5
 i2cFilepath :: FilePath
 i2cFilepath  = "/dev/i2c-1"
 i2cAddress  :: Int

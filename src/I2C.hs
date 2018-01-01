@@ -2,18 +2,13 @@ module I2C (
     withFile, initialize, readValues,
     FileDesc, ErrorCode, MemoryAddress,
     Word8,
-    module Control.Applicative,
-    module Control.Monad,
-    module Control.Monad.Trans.Maybe,
-    module Control.Monad.Trans.Reader,
-    module Control.Monad.IO.Class) where
+) where
 
-import Data.Bits
-import Control.Applicative
-import Control.Monad
-import Control.Monad.Trans.Maybe (MaybeT(MaybeT))
-import Control.Monad.Trans.Reader(ReaderT(ReaderT), ask)
-import Control.Monad.IO.Class
+import Data.Bits                  (shiftL)
+import Control.Monad              (forM)
+import Control.Monad.Trans.Maybe  (MaybeT(MaybeT))
+import Control.Monad.Trans.Reader (ReaderT(ReaderT), ask)
+import Control.Monad.IO.Class     (liftIO)
 import I2CLow
 
 type DescReaderIO = ReaderT FileDesc IO
