@@ -1,22 +1,25 @@
 {-# LANGUAGE OverloadedStrings #-}
 import Data.Maybe
 import qualified Data.ByteString.Char8 as B
+import Control.Monad.Trans.Maybe (runMaybeT)
+import Control.Monad.Trans.Reader(runReaderT)
 import Control.Concurrent
 import System.Posix.Syslog
 import I2C
 
 main :: IO ()
-main = do
-    withFile i2cFilepath $ \fd -> do
-        flip runReaderT fd $ do
+main = withFile i2cFilepath $ \fd -> do
+    flip runReaderT fd $ do
+        runMaybeT $ do
             initialize i2cAddress
             liftIO $ putStrLn "start inserting"
             forever $ do
-                ns <- map fromJust <$> readValues offset
+                ns <- readValues offset
                 liftIO $ do
-		    writeLog ns
+                    writeLog ns
                     reportStats ns
                     threadDelay $ 500 * 1000
+    return ()
 
 writeLog :: [Int] -> IO ()
 writeLog ns = writeLog' s
