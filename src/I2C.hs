@@ -1,70 +1,68 @@
 module I2C (
-    withFile, initialize, readValues,
-    FileDesc, ErrorCode, MemoryAddress,
-    Word8,
-) where
+    withI2C, initialize, tryGetIntsAt,
+    C.FileDesc, C.ErrorCode, C.MemAddress) where
 
-import Data.Bits                  (shiftL)
-import Control.Monad              (forM)
-import Control.Monad.Trans.Maybe  (MaybeT(MaybeT))
-import Control.Monad.Trans.Reader (ReaderT(ReaderT), ask)
-import Control.Monad.IO.Class     (liftIO)
-import I2CLow
+import Data.Word
+import Data.Bits
+import Control.Monad
+import Control.Monad.IO.Class
+import Control.Exception
+import qualified Control.Monad.Trans.Maybe  as M
+import qualified Control.Monad.Trans.Reader as R
+import qualified I2C.C as C
 
-type DescReaderIO = ReaderT FileDesc IO
+type DescReaderIO = R.ReaderT C.FileDesc IO
 
-withFile :: FilePath -> (FileDesc -> IO ()) -> IO ()
-withFile pathname actUsing = do
-    fd <- open pathname
-    case fd of
-        Left _    -> return ()
-        Right fd' -> actUsing fd'
+withI2C :: FilePath -> (C.FileDesc -> IO ()) -> IO ()
+withI2C pathname action = bracket (C.open pathname)
+  (\(Right fd) -> action fd) $
+  \fd -> case fd of
+    Left _   -> return ()
+    Right fd -> void $ C.close fd
 
-initialize :: Int -> MaybeT DescReaderIO ()
-initialize addr = MaybeT (initIOControl' addr)
+initialize :: Int -> M.MaybeT DescReaderIO ()
+initialize addr = M.MaybeT (initIOControl addr)
 
-readValues :: Word8 -> MaybeT DescReaderIO [Int]
-readValues offset = forM [0..63] (readValue offset)
+tryGetIntsAt :: Word8 -> M.MaybeT DescReaderIO [Int]
+tryGetIntsAt offset = forM [0..63] (tryGetIntAt offset)
 
-readValue :: MemoryAddress -> Int -> MaybeT DescReaderIO Int
-readValue offset i = do
-    let j = offset + 2*fromIntegral i
-    [low, high]  <- forM [j, j+1] $ \k -> do
-        x <- readByteAt k
-        return $ fromIntegral x
-    return $ (high`shiftL`8 + low)
+tryGetIntAt :: C.MemAddress -> Int -> M.MaybeT DescReaderIO Int
+tryGetIntAt offset i = do
+  let j = offset + 2*fromIntegral i
+  [low, high]  <- forM [j, j+1] $ \k -> do
+    fromIntegral <$> tryGetByteAt k
+  return $ (high`shiftL`8 + low)
 
-readByteAt :: MemoryAddress -> MaybeT DescReaderIO Word8
-readByteAt addr = do
-    maybeWrite addr
-    maybeRead  addr
+tryGetByteAt :: C.MemAddress -> M.MaybeT DescReaderIO Word8
+tryGetByteAt addr = do
+  maybeWrite addr
+  maybeRead  addr
 
+maybeRead  :: C.MemAddress -> M.MaybeT DescReaderIO Word8
+maybeRead  addr = M.MaybeT (readAt addr)
+maybeWrite :: C.MemAddress -> M.MaybeT DescReaderIO ()
+maybeWrite addr = M.MaybeT (writeAt addr)
 
-maybeWrite :: MemoryAddress -> MaybeT DescReaderIO ()
-maybeWrite addr = MaybeT (write1' addr)
-maybeRead  :: MemoryAddress -> MaybeT DescReaderIO Word8
-maybeRead  addr = MaybeT (read1' addr)
+readAt :: C.MemAddress -> DescReaderIO (Maybe Word8)
+readAt addr = do
+  fd <- R.ask
+  r <- liftIO $ C.readAt fd addr
+  return $ case r of
+    Right x -> Just x
+    _       -> Nothing
 
-write1' :: MemoryAddress -> DescReaderIO (Maybe ())
-write1' addr = do
-    fd <- ask
-    r <- liftIO $ write1 fd addr
-    return $ case r of
-        Left _  -> Nothing
-	Right _ -> Just ()
+writeAt :: C.MemAddress -> DescReaderIO (Maybe ())
+writeAt addr = do
+  fd <- R.ask
+  r <- liftIO $ C.writeAt fd addr
+  return $ case r of
+    Right _ -> Just ()
+    _       -> Nothing
 
-read1' :: MemoryAddress -> DescReaderIO (Maybe Word8)
-read1' addr = do
-    fd <- ask
-    r <- liftIO $ read1 fd addr
-    return $ case r of
-        Left _  -> Nothing
-	Right x -> Just x
-
-initIOControl' :: Int -> DescReaderIO (Maybe ())
-initIOControl' addr = do
-    fd <- ask
-    r <- liftIO $ initIOControl fd addr
-    return $ case r of
-        Left _  -> Nothing
-        Right _ -> Just ()
+initIOControl :: Int -> DescReaderIO (Maybe ())
+initIOControl addr = do
+  fd <- R.ask
+  r <- liftIO $ C.initIOControl fd addr
+  return $ case r of
+    Right _ -> Just ()
+    _       -> Nothing
