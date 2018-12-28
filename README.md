@@ -8,7 +8,7 @@ RPiはセンシングに徹するよう役割分担した。
 
 ## 実行
 > stack build  
-> stack exec hallizkeer
+> stack exec hallizkeer-exe
 
 stackは、あらかじめで
 `curl -sSL https://get.haskellstack.org/ | sh`
